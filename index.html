@@ -164,7 +164,7 @@
             extrairDataEmissao(texto) {
                 const textoNormalizado = texto.replace(/\s+/g, ' ').trim();
                 const tentativas = [
-                    /(?:DATA\s+(?:E\s+HORA\s+)?DA\s+EMISSÃO|COMPETÊNCIA)\s*:?\s*(\d{2}\/\d{2}\/\d{4})/i,
+                    /(?:DATA\s+(?:E\s+HORA\s+)?DA|DE\s+EMISSÃO|COMPETÊNCIA)\s*:?\s*(\d{2}\/\d{2}\/\d{4})/i,
                     /(\d{2}\/\d{2}\/\d{4})/
                 ];
                  for (const regex of tentativas) {
@@ -369,6 +369,7 @@
     </script>
 </body>
 </html>
+
 
 
 
