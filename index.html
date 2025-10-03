@@ -177,12 +177,17 @@
             }
             extrairVlServico(texto) {
                 const textoNormalizado = texto.replace(/\s+/g, ' ').trim();
+                textoNormalizado = textoNormalizado.replace('(R$):', '').trim();
+                
                 const tentativas = [
                     /VALOR\s+TOTAL\s+DO(?:S)?\s+SERVI[ÇC]O(?:S)?\s*=?\s*R?\$?\s*([\d.,]+)/i,
                     /V[IL]\.?\s*L[IÍ]QUIDO\s+DA\s+NOTA\s+FISCAL\s+R?\$?\s*([\d.,]+)/i,
                     /V[IL]\.?\s*TOTAL\s+DOS\s+SERVI[ÇC]OS[^R]*R?\$?\s*([\d.,]+)/i,
                     /BASE\s+DE\s+C[AÁ]LCULO\s+TOTAL[^R]*R?\$?\s*([\d.,]+)/i,
                     /VALOR\s+DO\s+SERVI[CÇ]O[^R]*R?\$?\s*([\d.,]+)/i,
+                    
+                    /BASE\s+DE\s+C[AÁ]LCULO\s+[^R]*R?\$?\s*([\d.,]+)/i,
+                    
                     /Vs+\A+s*\L+s*\O+s*\R+s*\L+s*\I[Í]+s*Q+s*\U+s*\I+s*\D+s*\O+s*\=+s*(\d+)/i,
                     /([\d]{1,3}(?:\.\d{3})*,\d{2})\s+DOCUMENTO\s+EMITIDO\s+POR\s+ME\s+OU\s+EPP/i
                 ];
@@ -367,6 +372,7 @@
     </script>
 </body>
 </html>
+
 
 
 
