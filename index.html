@@ -149,6 +149,7 @@
                 const textoNormalizado = texto.replace(/\s+/g, ' ').trim();
                 const tentativas = [
                     /NOTA\s+FISCAL\s+(?:DE\s+SERVIÇOS\s+ELETRÔNICA\s+)?N[º°]?\s*:?\s*(\d+)/i,
+                    /N[UÚ]MERO\s+DA\s+NFS-E\s*(\d+)/i,
                     /n[oº°](\d+)/i
                 ];
                 for (const regex of tentativas) {
@@ -364,6 +365,7 @@
     </script>
 </body>
 </html>
+
 
 
 
