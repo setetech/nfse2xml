@@ -176,8 +176,7 @@
                 return null;
             }
             extrairVlServico(texto) {
-                const textoNormalizado = texto.replace(/\s+/g, ' ').trim();
-                textoNormalizado = textoNormalizado.replace('(R$):', '').trim();
+                const textoNormalizado = texto.replace(/\s+/g, ' ').replace('(R$):', '').trim();
                 
                 const tentativas = [
                     /VALOR\s+TOTAL\s+DO(?:S)?\s+SERVI[ÇC]O(?:S)?\s*=?\s*R?\$?\s*([\d.,]+)/i,
@@ -372,6 +371,7 @@
     </script>
 </body>
 </html>
+
 
 
 
