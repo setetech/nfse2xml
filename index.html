@@ -132,6 +132,16 @@
         // Se a biblioteca carregou, configura o worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
+        function extrairEntre(texto, delimitadorInicio, delimitadorFim) {
+             const inicio = texto.indexOf(delimitadorInicio);
+             const fim = texto.indexOf(delimitadorFim, inicio + delimitadorInicio.length);
+             if (inicio === -1 || fim === -1) {
+                  return null; // Delimitadores não encontrados
+             }
+             return texto.substring(inicio + delimitadorInicio.length, fim);
+        }
+        
+
         // --- MÓDULO GERADOR DE XML ---
         class GeradorXml {
              parseValue(valor) {
@@ -146,15 +156,6 @@
                 return isNaN(num) ? 0 : num;
             }
 
-            function extrairEntre(texto, delimitadorInicio, delimitadorFim) {
-                const inicio = texto.indexOf(delimitadorInicio);
-                const fim = texto.indexOf(delimitadorFim, inicio + delimitadorInicio.length);
-                if (inicio === -1 || fim === -1) {
-                    return null; // Delimitadores não encontrados
-                }
-                 return texto.substring(inicio + delimitadorInicio.length, fim);
-            }
-            
             extrairNumeroNota(texto) {
                 const textoNormalizado = texto.replace(/\s+/g, ' ').trim();
                 const tentativas = [
@@ -384,6 +385,7 @@
     </script>
 </body>
 </html>
+
 
 
 
