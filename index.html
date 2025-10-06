@@ -136,7 +136,7 @@
              const inicio = texto.indexOf(delimitadorInicio);
              const fim = texto.indexOf(delimitadorFim, inicio + delimitadorInicio.length);
              if (inicio === -1 || fim === -1) {
-                  return null; // Delimitadores não encontrados
+                  return ""; // Delimitadores não encontrados
              }
              return texto.substring(inicio + delimitadorInicio.length, fim);
         }
@@ -385,6 +385,7 @@
     </script>
 </body>
 </html>
+
 
 
 
