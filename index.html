@@ -166,7 +166,8 @@
                     /NFS-E\s*(\d+)/i,
                     /N[º°]?\s*Nota\s*:\s*(\d+)/i,
                     /n[oº°](\d+)/i,
-                    /RPS\s+N[º°]?\s*(\d+)/i
+                    /RPS\s+N[º°]?\s*(\d+)/i,
+                    
                 ];
                 for (const regex of tentativas) {
                     const match = textoNormalizado.match(regex);
@@ -177,6 +178,11 @@
 
                 let auxExtracao =  extrairEntre(texto,"PREFEITURA DO MUNICÍPIO DE SÃO PAULO |","EE:");
                 auxExtracao = auxExtracao.replace(/\D/g, '')
+                if(auxExtracao.length >= 1) return auxExtracao;
+
+                let auxExtracao =  texto.substring(1,texto.indexOf("/E portal da NFSe"));
+                auxExtracao = auxExtracao.substring(auxExtracao.length - 4);
+
                 return auxExtracao;
 
             }
