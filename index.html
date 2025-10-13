@@ -181,9 +181,14 @@
                 if(auxExtracao.length >= 1) return auxExtracao;
 
                 auxExtracao =  texto.substring(1,texto.indexOf("/E portal da NFSe"));
-                console.log(auxExtracao)
                 auxExtracao = auxExtracao.substring(auxExtracao.length - 3).trim();
-                console.log(auxExtracao)
+                if(auxExtracao.length >= 1) return auxExtracao;
+
+                auxExtracao =  texto.substring(1,texto.indexOf("Número da Nota Fiscal"));
+                auxExtracao = auxExtracao.substring(auxExtracao.length - 3).trim();
+                if(auxExtracao.length >= 1) return auxExtracao;
+
+                
 
                 return auxExtracao;
 
