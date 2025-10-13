@@ -165,7 +165,8 @@
                     /NFS-E\s*(\d+)/i,
                     /N[º°]?\s*Nota\s*:\s*(\d+)/i,
                     /n[oº°](\d+)/i,
-                    /RPS\s+N[º°]?\s*(\d+)/i
+                    /RPS\s+N[º°]?\s*(\d+)/i,
+                    /N[UÚ]MERO\s+DA\s+NOTA\s+FISCAL\s+(\d+)/i
                 ];
                 for (const regex of tentativas) {
                     const match = textoNormalizado.match(regex);
