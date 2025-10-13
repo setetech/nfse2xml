@@ -164,7 +164,8 @@
                     /N[UÚ]MERO\s+DA\s+NOTA\s*(\d+)/i,
                     /NFS-E\s*(\d+)/i,
                     /N[º°]?\s*Nota\s*:\s*(\d+)/i,
-                    /n[oº°](\d+)/i
+                    /n[oº°](\d+)/i,
+                    /RPS\s+N[º°]?\s*(\d+)/i
                 ];
                 for (const regex of tentativas) {
                     const match = textoNormalizado.match(regex);
