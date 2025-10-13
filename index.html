@@ -198,6 +198,7 @@
                 const textoNormalizado = texto.replace(/\s+/g, ' ').trim();
                 
                 const tentativas = [
+                    /DESCONTO\s+CONDICIONADO\s*:?R?\$?\s*([\d.,]+)/i,
                     /VALOR\s+TOTAL\s+DA\s+NOTA\s*=?\s*R?\$?\s*([\d.,]+)/i,
                     /VALOR\s+TOTAL\s+DO(?:S)?\s+SERVI[ÇC]O(?:S)?\s*=?\s*R?\$?\s*([\d.,]+)/i,
                     /V[IL]\.?\s*L[IÍ]QUIDO\s+DA\s+NOTA\s+FISCAL\s+R?\$?\s*([\d.,]+)/i,
