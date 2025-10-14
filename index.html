@@ -177,6 +177,12 @@
                     }
                 }
 
+                auxExtracao =  texto.substring(texto.indexOf("RPS NFS-e Substituída")),10;
+                //auxExtracao = auxExtracao.substring(1,auxExtracao.length trim();
+                console.log(auxExtracao)
+                if(auxExtracao.length >= 1) return auxExtracao;
+
+
                 let auxExtracao =  extrairEntre(texto,"PREFEITURA DO MUNICÍPIO DE SÃO PAULO |","EE:");
                 auxExtracao = auxExtracao.replace(/\D/g, '')
                 if(auxExtracao.length >= 1) return auxExtracao;
@@ -187,11 +193,6 @@
 
                 auxExtracao =  texto.substring(1,texto.indexOf("Número da Nota Fiscal"));
                 auxExtracao = auxExtracao.substring(auxExtracao.length - 4).trim();
-                if(auxExtracao.length >= 1) return auxExtracao;
-
-                auxExtracao =  texto.substring(texto.indexOf("RPS NFS-e Substituída")),10;
-                //auxExtracao = auxExtracao.substring(1,auxExtracao.length trim();
-                console.log(auxExtracao)
                 if(auxExtracao.length >= 1) return auxExtracao;
 
 
