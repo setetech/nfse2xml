@@ -215,8 +215,11 @@
                 const textoNormalizado = texto.replace(/\s+/g, ' ').trim();
 
                 let auxExtracao =  texto.substring(texto.indexOf("Valor Líquido Valor do Serviço"),20);
+                console.log(auxExtracao);
                 auxExtracao = auxExtracao.replace("0,00 ", '');
+                console.log(auxExtracao);
                 auxExtracao = auxExtracao.substring(1, auxExtracao.indexOf(" "));
+                console.log(auxExtracao);
                 if(auxExtracao.length >= 1) return auxExtracao;
                 
                 const tentativas = [
