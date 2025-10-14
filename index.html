@@ -213,6 +213,11 @@
             }
             extrairVlServico(texto) {
                 const textoNormalizado = texto.replace(/\s+/g, ' ').trim();
+
+                let auxExtracao =  texto.substring(texto.indexOf("Valor Líquido Valor do Serviço"),20);
+                auxExtracao = auxExtracao.replace("0,00 ", '');
+                auxExtracao = auxExtracao.substring(1, auxExtracao.indexOf(" "));
+                if(auxExtracao.length >= 1) return auxExtracao;
                 
                 const tentativas = [
                     /DESCONTO\s+CONDICIONADO\s*:?R?\$?\s*([\d.,]+)/i,
