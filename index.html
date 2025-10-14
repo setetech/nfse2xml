@@ -177,9 +177,7 @@
                     }
                 }
 
-                auxExtracao =  texto.substring(texto.indexOf("RPS NFS-e Substituída")),10;
-                //auxExtracao = auxExtracao.substring(1,auxExtracao.length trim();
-                console.log(auxExtracao)
+                auxExtracao =  texto.substring(texto.indexOf("RPS NFS-e Substituída"),10);
                 if(auxExtracao.length >= 1) return auxExtracao;
 
 
