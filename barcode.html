@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contador de Estoque</title>
+    <!-- O script da biblioteca foi movido para o <head> com 'defer' para garantir o carregamento correto -->
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest/umd/zxing.min.js"></script>
     <style>
         :root {
             --primary-color: #007bff;
@@ -78,6 +80,7 @@
             justify-content: center;
             gap: 10px;
             margin: 20px 0;
+            flex-wrap: wrap;
         }
 
         button {
@@ -214,7 +217,7 @@
 
     <div class="container">
         <div id="scanner-container">
-            <video id="video"></video>
+            <video id="video" playsinline></video> <!-- playsinline é importante para iOS -->
             <div id="laser"></div>
         </div>
         
@@ -244,10 +247,9 @@
     </div>
 
     <div id="toast" class="toast"></div>
-
-    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest/umd/zxing.min.js"></script>
-
+    
     <script>
+        // Espera o DOM estar pronto. Como o script da biblioteca usa 'defer', ele estará carregado neste ponto.
         document.addEventListener('DOMContentLoaded', () => {
             const video = document.getElementById('video');
             const startButton = document.getElementById('startButton');
@@ -262,45 +264,52 @@
             const laser = document.getElementById('laser');
             const toast = document.getElementById('toast');
 
-            let codeReader;
+            let codeReader = null;
             let currentScannedCode = null;
 
             async function initScanner() {
+                // Checagem de segurança para garantir que a biblioteca carregou
+                if (typeof ZXing === 'undefined') {
+                    showToast('Erro: Biblioteca de scanner não carregou.', 'error');
+                    console.error("ZXing library failed to load.");
+                    return;
+                }
+
                 try {
                     codeReader = new ZXing.BrowserMultiFormatReader();
-                    const videoInputDevices = await codeReader.listVideoInputDevices();
-                    const selectedDeviceId = videoInputDevices.length > 1 
-                        ? videoInputDevices.find(device => device.label.toLowerCase().includes('back'))?.deviceId || videoInputDevices[0].deviceId
-                        : videoInputDevices[0].deviceId;
                     
-                    if (!selectedDeviceId) {
-                        showToast("Nenhuma câmera encontrada.", 'error');
-                        return;
-                    }
+                    const constraints = {
+                        video: {
+                            facingMode: {
+                                exact: 'environment'
+                            }
+                        }
+                    };
 
                     startButton.style.display = 'none';
                     stopButton.style.display = 'inline-block';
                     laser.style.display = 'block';
 
-                    codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+                    codeReader.decodeFromConstraints(constraints, 'video', (result, err) => {
                         if (result) {
                             handleScan(result.text);
                         }
                         if (err && !(err instanceof ZXing.NotFoundException)) {
-                            console.error(err);
-                            showToast(`Erro ao escanear: ${err}`, 'error');
+                            console.error('Erro de decodificação:', err);
+                            showToast(`Erro ao ler o código: ${err.name}`, 'error');
                         }
                     });
+
                 } catch (error) {
                     console.error("Erro ao iniciar o scanner:", error);
-                    showToast("Não foi possível acessar a câmera.", 'error');
+                    showToast(`Erro ao acessar câmera: ${error.name}`, 'error');
+                    stopScanner();
                 }
             }
 
             function stopScanner() {
                 if (codeReader) {
                     codeReader.reset();
-                    codeReader = null;
                 }
                 startButton.style.display = 'inline-block';
                 stopButton.style.display = 'none';
@@ -308,7 +317,8 @@
             }
 
             function handleScan(code) {
-                navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
+                stopScanner(); 
+
                 if (navigator.vibrate) {
                     navigator.vibrate(200);
                 }
@@ -318,7 +328,6 @@
                 quantityModal.style.display = 'flex';
                 quantityInput.focus();
                 quantityInput.select();
-                stopScanner();
             }
 
             function saveData() {
@@ -352,6 +361,8 @@
                 return JSON.parse(localStorage.getItem('stockItems')) || [];
             }
 
+
+
             function saveItemsToStorage(items) {
                 localStorage.setItem('stockItems', JSON.stringify(items));
             }
@@ -368,7 +379,6 @@
                             <button class="delete-btn" data-index="${index}">&times;</button>
                         </div>
                     `;
-                    // Style the delete button dynamically
                     const deleteBtn = li.querySelector('.delete-btn');
                     deleteBtn.style.backgroundColor = 'var(--danger-color)';
                     deleteBtn.style.color = 'white';
@@ -409,7 +419,7 @@
                 }
                 const dataString = items.map(item => `${item.code};${item.quantity}`).join('\n');
                 navigator.clipboard.writeText(dataString).then(() => {
-                    showToast("Dados copiados para a área de transferência!");
+                    showToast("Dados copiados!");
                 }).catch(err => {
                     showToast("Falha ao copiar dados.", 'error');
                     console.error('Erro ao copiar:', err);
@@ -417,10 +427,13 @@
             }
 
             function clearAllData() {
-                if (confirm('Você tem certeza que deseja apagar todos os itens?')) {
+                const items = getItemsFromStorage();
+                if (items.length > 0 && confirm('Você tem certeza que deseja apagar todos os itens?')) {
                     localStorage.removeItem('stockItems');
                     renderItemList();
                     showToast("Todos os itens foram apagados.");
+                } else if (items.length === 0) {
+                     showToast("A lista já está vazia.", 'error');
                 }
             }
             
@@ -431,7 +444,7 @@
                 setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
             }
 
-            // Event Listeners
+            // --- Event Listeners ---
             startButton.addEventListener('click', initScanner);
             stopButton.addEventListener('click', stopScanner);
             saveButton.addEventListener('click', saveData);
@@ -439,25 +452,20 @@
             clearButton.addEventListener('click', clearAllData);
             
             quantityModal.addEventListener('click', (e) => {
-                if (e.target === quantityModal) {
-                    closeModal();
-                }
+                if (e.target === quantityModal) closeModal();
             });
 
             quantityInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    saveData();
-                }
+                if (e.key === 'Enter') saveData();
             });
 
             itemList.addEventListener('change', (e) => {
-                if (e.target.type === 'number') {
+                if (e.target.tagName === 'INPUT' && e.target.type === 'number') {
                     const index = e.target.dataset.index;
                     const newQuantity = parseInt(e.target.value, 10);
                     if (!isNaN(newQuantity) && newQuantity > 0) {
                         updateQuantity(index, newQuantity);
                     } else {
-                        // Reset to old value if input is invalid
                         e.target.value = getItemsFromStorage()[index].quantity;
                     }
                 }
@@ -466,13 +474,16 @@
             itemList.addEventListener('click', (e) => {
                 if (e.target.classList.contains('delete-btn')) {
                     const index = e.target.dataset.index;
-                    deleteItem(index);
+                    if (confirm('Remover este item?')) {
+                        deleteItem(index);
+                    }
                 }
             });
 
-            // Initial render
+            // --- Initial render ---
             renderItemList();
         });
     </script>
 </body>
 </html>
+
