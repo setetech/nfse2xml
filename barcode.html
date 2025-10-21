@@ -1,489 +1,587 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contador de Estoque</title>
-    <!-- O script da biblioteca foi movido para o <head> com 'defer' para garantir o carregamento correto -->
-    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest/umd/zxing.min.js"></script>
+    <title>Leitor de Código de Barras</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <style>
-        :root {
-            --primary-color: #007bff;
-            --secondary-color: #6c757d;
-            --success-color: #28a745;
-            --danger-color: #dc3545;
-            --light-color: #f8f9fa;
-            --dark-color: #343a40;
-            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            font-family: var(--font-family);
-            margin: 0;
-            background-color: #e9ecef;
-            color: var(--dark-color);
-            display: flex;
-            flex-direction: column;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            padding: 20px;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 600px;
             margin: 0 auto;
-            padding: 15px;
-            flex-grow: 1;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
         }
 
-        header {
-            background-color: var(--dark-color);
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 15px;
+            padding: 24px;
             text-align: center;
-            border-bottom: 4px solid var(--primary-color);
         }
 
-        h1 {
-            margin: 0;
-            font-size: 1.5em;
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
         }
 
-        #scanner-container {
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .scanner-container {
             position: relative;
             width: 100%;
-            max-width: 500px;
-            margin: 20px auto;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 2px solid #ccc;
+            height: 300px;
             background: #000;
-        }
-        
-        #video {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-        
-        #laser {
-            position: absolute;
-            top: 50%;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background-color: red;
-            box-shadow: 0 0 10px red;
-            display: none; /* Hidden by default */
-        }
-
-        .controls, .actions {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin: 20px 0;
-            flex-wrap: wrap;
-        }
-
-        button {
-            padding: 12px 20px;
-            font-size: 1em;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            color: white;
-            font-weight: bold;
-            transition: background-color 0.3s, transform 0.1s;
-        }
-        
-        button:active {
-            transform: scale(0.95);
-        }
-
-        #startButton { background-color: var(--primary-color); }
-        #stopButton { background-color: var(--secondary-color); }
-        #copyButton { background-color: var(--success-color); }
-        #clearButton { background-color: var(--danger-color); }
-        
-        #quantityModal {
             display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
+        }
+
+        #interactive {
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.5);
+        }
+
+        #interactive video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .scanner-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 100px;
+            border: 2px solid #00ff00;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+        }
+
+        .scanner-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: #00ff00;
+            animation: scan 2s ease-in-out infinite;
+        }
+
+        @keyframes scan {
+            0%, 100% { top: 0; }
+            50% { top: 100%; }
+        }
+
+        .controls {
+            padding: 20px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 12px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e0e7ff;
+            color: #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #c7d2fe;
+        }
+
+        .btn-danger {
+            background: #fee;
+            color: #dc2626;
+        }
+
+        .btn-danger:hover {
+            background: #fdd;
+        }
+
+        .input-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
             align-items: center;
             justify-content: center;
         }
 
         .modal-content {
-            background-color: white;
-            padding: 25px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
             width: 90%;
-            max-width: 320px;
+            max-width: 400px;
+            animation: slideUp 0.3s ease-out;
         }
-        
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
         .modal-content h3 {
-            margin-top: 0;
+            margin-bottom: 16px;
+            color: #333;
         }
 
-        #quantityInput {
+        .modal-content p {
+            margin-bottom: 16px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .modal-content input {
             width: 100%;
-            padding: 10px;
-            margin: 15px 0;
-            font-size: 1.2em;
-            text-align: center;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-        }
-        
-        #saveButton {
-            background-color: var(--primary-color);
-            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e7ff;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 16px;
         }
 
-        #itemList {
-            list-style-type: none;
-            padding: 0;
-            margin-top: 20px;
+        .modal-content input:focus {
+            outline: none;
+            border-color: #667eea;
         }
 
-        #itemList li {
-            background-color: white;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 5px;
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+        }
+
+        .inventory-list {
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .inventory-item {
+            background: #f9fafb;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        #itemList .item-code {
-            font-weight: bold;
-            word-break: break-all;
-            margin-right: 15px;
         }
 
-        #itemList .item-quantity {
+        .inventory-item .info {
+            flex: 1;
+        }
+
+        .inventory-item .code {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .inventory-item .qty {
+            color: #667eea;
+            font-size: 14px;
+        }
+
+        .inventory-item .actions {
             display: flex;
-            align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
-        #itemList input[type="number"] {
-            width: 60px;
-            padding: 5px;
-            text-align: center;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 1em;
+        .inventory-item button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
         }
-        
-        .toast {
-            visibility: hidden;
-            min-width: 250px;
-            background-color: var(--dark-color);
-            color: #fff;
+
+        .btn-edit {
+            background: #e0e7ff;
+            color: #667eea;
+        }
+
+        .btn-delete {
+            background: #fee;
+            color: #dc2626;
+        }
+
+        .empty-state {
             text-align: center;
-            border-radius: 5px;
-            padding: 16px;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .stats {
+            padding: 20px;
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .stat {
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .toast {
             position: fixed;
-            z-index: 2000;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            bottom: 30px;
-            font-size: 17px;
-            opacity: 0;
-            transition: opacity 0.5s, bottom 0.5s, visibility 0.5s;
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            display: none;
+            z-index: 2000;
+            animation: fadeIn 0.3s ease-out;
         }
 
-        .toast.show {
-            visibility: visible;
-            opacity: 1;
-            bottom: 50px;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
     </style>
 </head>
 <body>
-
-    <header>
-        <h1>Contador de Estoque</h1>
-    </header>
-
     <div class="container">
-        <div id="scanner-container">
-            <video id="video" playsinline></video> <!-- playsinline é importante para iOS -->
-            <div id="laser"></div>
+        <div class="header">
+            <h1>📦 Contagem de Estoque</h1>
+            <p>Escaneie códigos de barras para inventariar</p>
         </div>
-        
+
+        <div class="scanner-container" id="scannerContainer">
+            <div id="interactive" class="viewport"></div>
+            <div class="scanner-overlay">
+                <div class="scanner-line"></div>
+            </div>
+        </div>
+
         <div class="controls">
-            <button id="startButton">Iniciar Leitor</button>
-            <button id="stopButton" style="display: none;">Parar Leitor</button>
+            <button class="btn btn-primary" id="toggleScanBtn">📷 Iniciar Escaneamento</button>
+            <button class="btn btn-secondary" id="copyBtn" style="display: none;">📋 Copiar Dados</button>
+            <button class="btn btn-danger" id="clearBtn" style="display: none;">🗑️ Limpar Inventário</button>
         </div>
 
-        <hr>
-
-        <h3>Itens Lidos</h3>
-        <div class="actions">
-            <button id="copyButton">Copiar Dados</button>
-            <button id="clearButton">Limpar Tudo</button>
+        <div class="stats" id="stats" style="display: none;">
+            <div class="stat">
+                <div class="stat-value" id="itemCount">0</div>
+                <div class="stat-label">Itens</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="totalQty">0</div>
+                <div class="stat-label">Quantidade Total</div>
+            </div>
         </div>
 
-        <ul id="itemList"></ul>
+        <div class="inventory-list" id="inventoryList">
+            <div class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 2a1 1 0 0 0-.894.553L7.382 4H4a1 1 0 0 0 0 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6a1 1 0 1 0 0-2h-3.382l-.724-1.447A1 1 0 0 0 11 2H9z"/>
+                </svg>
+                <p>Nenhum item escaneado ainda</p>
+                <p style="font-size: 12px; margin-top: 8px;">Clique em "Iniciar Escaneamento" para começar</p>
+            </div>
+        </div>
     </div>
 
-    <div id="quantityModal">
+    <div class="input-modal" id="inputModal">
         <div class="modal-content">
-            <h3>Informe a Quantidade</h3>
-            <p><strong>Código:</strong> <span id="scannedCode"></span></p>
-            <input type="number" id="quantityInput" placeholder="Ex: 10" min="1" pattern="\d*">
-            <button id="saveButton">Salvar</button>
+            <h3>Código Detectado!</h3>
+            <p id="detectedCode"></p>
+            <input type="number" id="quantityInput" placeholder="Digite a quantidade" min="1" value="1" autofocus>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="cancelInput()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveItem()">Salvar</button>
+            </div>
         </div>
     </div>
 
-    <div id="toast" class="toast"></div>
-    
+    <div class="toast" id="toast"></div>
+
     <script>
-        // Espera o DOM estar pronto. Como o script da biblioteca usa 'defer', ele estará carregado neste ponto.
-        document.addEventListener('DOMContentLoaded', () => {
-            const video = document.getElementById('video');
-            const startButton = document.getElementById('startButton');
-            const stopButton = document.getElementById('stopButton');
-            const itemList = document.getElementById('itemList');
-            const quantityModal = document.getElementById('quantityModal');
-            const scannedCodeSpan = document.getElementById('scannedCode');
-            const quantityInput = document.getElementById('quantityInput');
-            const saveButton = document.getElementById('saveButton');
-            const copyButton = document.getElementById('copyButton');
-            const clearButton = document.getElementById('clearButton');
-            const laser = document.getElementById('laser');
-            const toast = document.getElementById('toast');
+        let scanning = false;
+        let currentBarcode = null;
+        let inventory = {};
 
-            let codeReader = null;
-            let currentScannedCode = null;
+        // Carregar inventário do armazenamento em memória
+        function loadInventory() {
+            const stored = localStorage.getItem('barcodeInventory');
+            if (stored) {
+                inventory = JSON.parse(stored);
+                updateUI();
+            }
+        }
 
-            async function initScanner() {
-                // Checagem de segurança para garantir que a biblioteca carregou
-                if (typeof ZXing === 'undefined') {
-                    showToast('Erro: Biblioteca de scanner não carregou.', 'error');
-                    console.error("ZXing library failed to load.");
-                    return;
-                }
+        // Salvar inventário
+        function saveInventory() {
+            localStorage.setItem('barcodeInventory', JSON.stringify(inventory));
+            updateUI();
+        }
 
-                try {
-                    codeReader = new ZXing.BrowserMultiFormatReader();
-                    
-                    const constraints = {
-                        video: {
-                            facingMode: {
-                                exact: 'environment'
-                            }
-                        }
-                    };
+        // Inicializar Quagga
+        function startScanner() {
+            const scannerContainer = document.getElementById('scannerContainer');
+            scannerContainer.style.display = 'block';
 
-                    startButton.style.display = 'none';
-                    stopButton.style.display = 'inline-block';
-                    laser.style.display = 'block';
-
-                    codeReader.decodeFromConstraints(constraints, 'video', (result, err) => {
-                        if (result) {
-                            handleScan(result.text);
-                        }
-                        if (err && !(err instanceof ZXing.NotFoundException)) {
-                            console.error('Erro de decodificação:', err);
-                            showToast(`Erro ao ler o código: ${err.name}`, 'error');
-                        }
-                    });
-
-                } catch (error) {
-                    console.error("Erro ao iniciar o scanner:", error);
-                    showToast(`Erro ao acessar câmera: ${error.name}`, 'error');
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#interactive'),
+                    constraints: {
+                        facingMode: "environment"
+                    }
+                },
+                decoder: {
+                    readers: [
+                        "ean_reader",
+                        "ean_8_reader",
+                        "code_128_reader",
+                        "code_39_reader",
+                        "upc_reader",
+                        "upc_e_reader"
+                    ]
+                },
+                locate: true
+            }, function(err) {
+                if (err) {
+                    console.error(err);
+                    showToast('Erro ao acessar câmera');
                     stopScanner();
-                }
-            }
-
-            function stopScanner() {
-                if (codeReader) {
-                    codeReader.reset();
-                }
-                startButton.style.display = 'inline-block';
-                stopButton.style.display = 'none';
-                laser.style.display = 'none';
-            }
-
-            function handleScan(code) {
-                stopScanner(); 
-
-                if (navigator.vibrate) {
-                    navigator.vibrate(200);
-                }
-                currentScannedCode = code;
-                scannedCodeSpan.textContent = code;
-                quantityInput.value = '1';
-                quantityModal.style.display = 'flex';
-                quantityInput.focus();
-                quantityInput.select();
-            }
-
-            function saveData() {
-                const quantity = parseInt(quantityInput.value, 10);
-                if (!currentScannedCode || isNaN(quantity) || quantity < 1) {
-                    showToast("Quantidade inválida.", 'error');
                     return;
                 }
+                Quagga.start();
+                scanning = true;
+                document.getElementById('toggleScanBtn').textContent = '⏸️ Pausar Escaneamento';
+            });
 
-                let items = getItemsFromStorage();
-                const existingItem = items.find(item => item.code === currentScannedCode);
+            Quagga.onDetected(onBarcodeDetected);
+        }
 
-                if (existingItem) {
-                    existingItem.quantity += quantity;
+        function stopScanner() {
+            if (scanning) {
+                Quagga.stop();
+                scanning = false;
+                document.getElementById('scannerContainer').style.display = 'none';
+                document.getElementById('toggleScanBtn').textContent = '📷 Iniciar Escaneamento';
+            }
+        }
+
+        function onBarcodeDetected(result) {
+            const code = result.codeResult.code;
+            if (code) {
+                currentBarcode = code;
+                stopScanner();
+                showInputModal(code);
+            }
+        }
+
+        function showInputModal(code) {
+            document.getElementById('detectedCode').textContent = `Código: ${code}`;
+            document.getElementById('quantityInput').value = inventory[code] ? inventory[code] : 1;
+            document.getElementById('inputModal').style.display = 'flex';
+            setTimeout(() => document.getElementById('quantityInput').focus(), 100);
+        }
+
+        function cancelInput() {
+            document.getElementById('inputModal').style.display = 'none';
+            currentBarcode = null;
+        }
+
+        function saveItem() {
+            const quantity = parseInt(document.getElementById('quantityInput').value);
+            if (quantity > 0 && currentBarcode) {
+                if (inventory[currentBarcode]) {
+                    inventory[currentBarcode] += quantity;
                 } else {
-                    items.push({ code: currentScannedCode, quantity: quantity });
+                    inventory[currentBarcode] = quantity;
                 }
-
-                saveItemsToStorage(items);
-                renderItemList();
-                closeModal();
-                showToast(`Item ${currentScannedCode} adicionado!`);
+                saveInventory();
+                showToast(`Adicionado: ${currentBarcode} (${quantity} un.)`);
+                cancelInput();
             }
+        }
+
+        function updateUI() {
+            const list = document.getElementById('inventoryList');
+            const keys = Object.keys(inventory);
             
-            function closeModal() {
-                quantityModal.style.display = 'none';
-                currentScannedCode = null;
-            }
-
-            function getItemsFromStorage() {
-                return JSON.parse(localStorage.getItem('stockItems')) || [];
-            }
-
-
-
-            function saveItemsToStorage(items) {
-                localStorage.setItem('stockItems', JSON.stringify(items));
-            }
-
-            function renderItemList() {
-                itemList.innerHTML = '';
-                const items = getItemsFromStorage();
-                items.forEach((item, index) => {
-                    const li = document.createElement('li');
-                    li.innerHTML = `
-                        <span class="item-code">${item.code}</span>
-                        <div class="item-quantity">
-                            <input type="number" value="${item.quantity}" min="1" data-index="${index}" />
-                            <button class="delete-btn" data-index="${index}">&times;</button>
+            if (keys.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 2a1 1 0 0 0-.894.553L7.382 4H4a1 1 0 0 0 0 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6a1 1 0 1 0 0-2h-3.382l-.724-1.447A1 1 0 0 0 11 2H9z"/>
+                        </svg>
+                        <p>Nenhum item escaneado ainda</p>
+                    </div>
+                `;
+                document.getElementById('stats').style.display = 'none';
+                document.getElementById('copyBtn').style.display = 'none';
+                document.getElementById('clearBtn').style.display = 'none';
+            } else {
+                let html = '';
+                let totalQty = 0;
+                
+                keys.forEach(code => {
+                    const qty = inventory[code];
+                    totalQty += qty;
+                    html += `
+                        <div class="inventory-item">
+                            <div class="info">
+                                <div class="code">${code}</div>
+                                <div class="qty">Quantidade: ${qty}</div>
+                            </div>
+                            <div class="actions">
+                                <button class="btn-edit" onclick="editItem('${code}')">✏️</button>
+                                <button class="btn-delete" onclick="deleteItem('${code}')">🗑️</button>
+                            </div>
                         </div>
                     `;
-                    const deleteBtn = li.querySelector('.delete-btn');
-                    deleteBtn.style.backgroundColor = 'var(--danger-color)';
-                    deleteBtn.style.color = 'white';
-                    deleteBtn.style.border = 'none';
-                    deleteBtn.style.borderRadius = '50%';
-                    deleteBtn.style.width = '30px';
-                    deleteBtn.style.height = '30px';
-                    deleteBtn.style.cursor = 'pointer';
-                    deleteBtn.style.fontSize = '1.2em';
-                    deleteBtn.style.lineHeight = '1';
-                    
-                    itemList.appendChild(li);
                 });
+                
+                list.innerHTML = html;
+                document.getElementById('itemCount').textContent = keys.length;
+                document.getElementById('totalQty').textContent = totalQty;
+                document.getElementById('stats').style.display = 'flex';
+                document.getElementById('copyBtn').style.display = 'block';
+                document.getElementById('clearBtn').style.display = 'block';
             }
+        }
 
-            function updateQuantity(index, newQuantity) {
-                let items = getItemsFromStorage();
-                if (items[index]) {
-                    items[index].quantity = newQuantity;
-                    saveItemsToStorage(items);
-                    showToast("Quantidade atualizada.");
-                }
+        function editItem(code) {
+            currentBarcode = code;
+            showInputModal(code);
+        }
+
+        function deleteItem(code) {
+            if (confirm(`Remover ${code} do inventário?`)) {
+                delete inventory[code];
+                saveInventory();
+                showToast('Item removido');
             }
+        }
+
+        function copyToClipboard() {
+            let text = 'INVENTÁRIO\n\n';
+            Object.keys(inventory).forEach(code => {
+                text += `${code}\t${inventory[code]}\n`;
+            });
             
-            function deleteItem(index) {
-                let items = getItemsFromStorage();
-                items.splice(index, 1);
-                saveItemsToStorage(items);
-                renderItemList();
-                showToast("Item removido.");
-            }
-
-            function copyDataToClipboard() {
-                const items = getItemsFromStorage();
-                if (items.length === 0) {
-                    showToast("Nenhum item para copiar.", 'error');
-                    return;
-                }
-                const dataString = items.map(item => `${item.code};${item.quantity}`).join('\n');
-                navigator.clipboard.writeText(dataString).then(() => {
-                    showToast("Dados copiados!");
-                }).catch(err => {
-                    showToast("Falha ao copiar dados.", 'error');
-                    console.error('Erro ao copiar:', err);
-                });
-            }
-
-            function clearAllData() {
-                const items = getItemsFromStorage();
-                if (items.length > 0 && confirm('Você tem certeza que deseja apagar todos os itens?')) {
-                    localStorage.removeItem('stockItems');
-                    renderItemList();
-                    showToast("Todos os itens foram apagados.");
-                } else if (items.length === 0) {
-                     showToast("A lista já está vazia.", 'error');
-                }
-            }
-            
-            function showToast(message, type = 'success') {
-                toast.textContent = message;
-                toast.style.backgroundColor = type === 'error' ? 'var(--danger-color)' : 'var(--dark-color)';
-                toast.className = "toast show";
-                setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
-            }
-
-            // --- Event Listeners ---
-            startButton.addEventListener('click', initScanner);
-            stopButton.addEventListener('click', stopScanner);
-            saveButton.addEventListener('click', saveData);
-            copyButton.addEventListener('click', copyDataToClipboard);
-            clearButton.addEventListener('click', clearAllData);
-            
-            quantityModal.addEventListener('click', (e) => {
-                if (e.target === quantityModal) closeModal();
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('✓ Dados copiados!');
+            }).catch(() => {
+                showToast('Erro ao copiar');
             });
+        }
 
-            quantityInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') saveData();
-            });
+        function clearInventory() {
+            if (confirm('Limpar todo o inventário? Esta ação não pode ser desfeita.')) {
+                inventory = {};
+                saveInventory();
+                showToast('Inventário limpo');
+            }
+        }
 
-            itemList.addEventListener('change', (e) => {
-                if (e.target.tagName === 'INPUT' && e.target.type === 'number') {
-                    const index = e.target.dataset.index;
-                    const newQuantity = parseInt(e.target.value, 10);
-                    if (!isNaN(newQuantity) && newQuantity > 0) {
-                        updateQuantity(index, newQuantity);
-                    } else {
-                        e.target.value = getItemsFromStorage()[index].quantity;
-                    }
-                }
-            });
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
 
-            itemList.addEventListener('click', (e) => {
-                if (e.target.classList.contains('delete-btn')) {
-                    const index = e.target.dataset.index;
-                    if (confirm('Remover este item?')) {
-                        deleteItem(index);
-                    }
-                }
-            });
-
-            // --- Initial render ---
-            renderItemList();
+        // Event Listeners
+        document.getElementById('toggleScanBtn').addEventListener('click', () => {
+            if (scanning) {
+                stopScanner();
+            } else {
+                startScanner();
+            }
         });
+
+        document.getElementById('copyBtn').addEventListener('click', copyToClipboard);
+        document.getElementById('clearBtn').addEventListener('click', clearInventory);
+
+        document.getElementById('quantityInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                saveItem();
+            }
+        });
+
+        // Inicializar
+        loadInventory();
     </script>
 </body>
 </html>
-
