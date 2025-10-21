@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contador de Estoque</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            margin: 0;
+            background-color: #e9ecef;
+            color: var(--dark-color);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 15px;
+            flex-grow: 1;
+        }
+
+        header {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-bottom: 4px solid var(--primary-color);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+
+        #scanner-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin: 20px auto;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #ccc;
+            background: #000;
+        }
+        
+        #video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        #laser {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: red;
+            box-shadow: 0 0 10px red;
+            display: none; /* Hidden by default */
+        }
+
+        .controls, .actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        
+        button:active {
+            transform: scale(0.95);
+        }
+
+        #startButton { background-color: var(--primary-color); }
+        #stopButton { background-color: var(--secondary-color); }
+        #copyButton { background-color: var(--success-color); }
+        #clearButton { background-color: var(--danger-color); }
+        
+        #quantityModal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 320px;
+        }
+        
+        .modal-content h3 {
+            margin-top: 0;
+        }
+
+        #quantityInput {
+            width: 100%;
+            padding: 10px;
+            margin: 15px 0;
+            font-size: 1.2em;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        
+        #saveButton {
+            background-color: var(--primary-color);
+            width: 100%;
+        }
+
+        #itemList {
+            list-style-type: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+
+        #itemList li {
+            background-color: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        #itemList .item-code {
+            font-weight: bold;
+            word-break: break-all;
+            margin-right: 15px;
+        }
+
+        #itemList .item-quantity {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #itemList input[type="number"] {
+            width: 60px;
+            padding: 5px;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+        
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: var(--dark-color);
+            color: #fff;
+            text-align: center;
+            border-radius: 5px;
+            padding: 16px;
+            position: fixed;
+            z-index: 2000;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 30px;
+            font-size: 17px;
+            opacity: 0;
+            transition: opacity 0.5s, bottom 0.5s, visibility 0.5s;
+        }
+
+        .toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 50px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Contador de Estoque</h1>
+    </header>
+
+    <div class="container">
+        <div id="scanner-container">
+            <video id="video"></video>
+            <div id="laser"></div>
+        </div>
+        
+        <div class="controls">
+            <button id="startButton">Iniciar Leitor</button>
+            <button id="stopButton" style="display: none;">Parar Leitor</button>
+        </div>
+
+        <hr>
+
+        <h3>Itens Lidos</h3>
+        <div class="actions">
+            <button id="copyButton">Copiar Dados</button>
+            <button id="clearButton">Limpar Tudo</button>
+        </div>
+
+        <ul id="itemList"></ul>
+    </div>
+
+    <div id="quantityModal">
+        <div class="modal-content">
+            <h3>Informe a Quantidade</h3>
+            <p><strong>Código:</strong> <span id="scannedCode"></span></p>
+            <input type="number" id="quantityInput" placeholder="Ex: 10" min="1" pattern="\d*">
+            <button id="saveButton">Salvar</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest/umd/zxing.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const video = document.getElementById('video');
+            const startButton = document.getElementById('startButton');
+            const stopButton = document.getElementById('stopButton');
+            const itemList = document.getElementById('itemList');
+            const quantityModal = document.getElementById('quantityModal');
+            const scannedCodeSpan = document.getElementById('scannedCode');
+            const quantityInput = document.getElementById('quantityInput');
+            const saveButton = document.getElementById('saveButton');
+            const copyButton = document.getElementById('copyButton');
+            const clearButton = document.getElementById('clearButton');
+            const laser = document.getElementById('laser');
+            const toast = document.getElementById('toast');
+
+            let codeReader;
+            let currentScannedCode = null;
+
+            async function initScanner() {
+                try {
+                    codeReader = new ZXing.BrowserMultiFormatReader();
+                    const videoInputDevices = await codeReader.listVideoInputDevices();
+                    const selectedDeviceId = videoInputDevices.length > 1 
+                        ? videoInputDevices.find(device => device.label.toLowerCase().includes('back'))?.deviceId || videoInputDevices[0].deviceId
+                        : videoInputDevices[0].deviceId;
+                    
+                    if (!selectedDeviceId) {
+                        showToast("Nenhuma câmera encontrada.", 'error');
+                        return;
+                    }
+
+                    startButton.style.display = 'none';
+                    stopButton.style.display = 'inline-block';
+                    laser.style.display = 'block';
+
+                    codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+                        if (result) {
+                            handleScan(result.text);
+                        }
+                        if (err && !(err instanceof ZXing.NotFoundException)) {
+                            console.error(err);
+                            showToast(`Erro ao escanear: ${err}`, 'error');
+                        }
+                    });
+                } catch (error) {
+                    console.error("Erro ao iniciar o scanner:", error);
+                    showToast("Não foi possível acessar a câmera.", 'error');
+                }
+            }
+
+            function stopScanner() {
+                if (codeReader) {
+                    codeReader.reset();
+                    codeReader = null;
+                }
+                startButton.style.display = 'inline-block';
+                stopButton.style.display = 'none';
+                laser.style.display = 'none';
+            }
+
+            function handleScan(code) {
+                navigator.vibrate = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate || navigator.msVibrate;
+                if (navigator.vibrate) {
+                    navigator.vibrate(200);
+                }
+                currentScannedCode = code;
+                scannedCodeSpan.textContent = code;
+                quantityInput.value = '1';
+                quantityModal.style.display = 'flex';
+                quantityInput.focus();
+                quantityInput.select();
+                stopScanner();
+            }
+
+            function saveData() {
+                const quantity = parseInt(quantityInput.value, 10);
+                if (!currentScannedCode || isNaN(quantity) || quantity < 1) {
+                    showToast("Quantidade inválida.", 'error');
+                    return;
+                }
+
+                let items = getItemsFromStorage();
+                const existingItem = items.find(item => item.code === currentScannedCode);
+
+                if (existingItem) {
+                    existingItem.quantity += quantity;
+                } else {
+                    items.push({ code: currentScannedCode, quantity: quantity });
+                }
+
+                saveItemsToStorage(items);
+                renderItemList();
+                closeModal();
+                showToast(`Item ${currentScannedCode} adicionado!`);
+            }
+            
+            function closeModal() {
+                quantityModal.style.display = 'none';
+                currentScannedCode = null;
+            }
+
+            function getItemsFromStorage() {
+                return JSON.parse(localStorage.getItem('stockItems')) || [];
+            }
+
+            function saveItemsToStorage(items) {
+                localStorage.setItem('stockItems', JSON.stringify(items));
+            }
+
+            function renderItemList() {
+                itemList.innerHTML = '';
+                const items = getItemsFromStorage();
+                items.forEach((item, index) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span class="item-code">${item.code}</span>
+                        <div class="item-quantity">
+                            <input type="number" value="${item.quantity}" min="1" data-index="${index}" />
+                            <button class="delete-btn" data-index="${index}">&times;</button>
+                        </div>
+                    `;
+                    // Style the delete button dynamically
+                    const deleteBtn = li.querySelector('.delete-btn');
+                    deleteBtn.style.backgroundColor = 'var(--danger-color)';
+                    deleteBtn.style.color = 'white';
+                    deleteBtn.style.border = 'none';
+                    deleteBtn.style.borderRadius = '50%';
+                    deleteBtn.style.width = '30px';
+                    deleteBtn.style.height = '30px';
+                    deleteBtn.style.cursor = 'pointer';
+                    deleteBtn.style.fontSize = '1.2em';
+                    deleteBtn.style.lineHeight = '1';
+                    
+                    itemList.appendChild(li);
+                });
+            }
+
+            function updateQuantity(index, newQuantity) {
+                let items = getItemsFromStorage();
+                if (items[index]) {
+                    items[index].quantity = newQuantity;
+                    saveItemsToStorage(items);
+                    showToast("Quantidade atualizada.");
+                }
+            }
+            
+            function deleteItem(index) {
+                let items = getItemsFromStorage();
+                items.splice(index, 1);
+                saveItemsToStorage(items);
+                renderItemList();
+                showToast("Item removido.");
+            }
+
+            function copyDataToClipboard() {
+                const items = getItemsFromStorage();
+                if (items.length === 0) {
+                    showToast("Nenhum item para copiar.", 'error');
+                    return;
+                }
+                const dataString = items.map(item => `${item.code};${item.quantity}`).join('\n');
+                navigator.clipboard.writeText(dataString).then(() => {
+                    showToast("Dados copiados para a área de transferência!");
+                }).catch(err => {
+                    showToast("Falha ao copiar dados.", 'error');
+                    console.error('Erro ao copiar:', err);
+                });
+            }
+
+            function clearAllData() {
+                if (confirm('Você tem certeza que deseja apagar todos os itens?')) {
+                    localStorage.removeItem('stockItems');
+                    renderItemList();
+                    showToast("Todos os itens foram apagados.");
+                }
+            }
+            
+            function showToast(message, type = 'success') {
+                toast.textContent = message;
+                toast.style.backgroundColor = type === 'error' ? 'var(--danger-color)' : 'var(--dark-color)';
+                toast.className = "toast show";
+                setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+            }
+
+            // Event Listeners
+            startButton.addEventListener('click', initScanner);
+            stopButton.addEventListener('click', stopScanner);
+            saveButton.addEventListener('click', saveData);
+            copyButton.addEventListener('click', copyDataToClipboard);
+            clearButton.addEventListener('click', clearAllData);
+            
+            quantityModal.addEventListener('click', (e) => {
+                if (e.target === quantityModal) {
+                    closeModal();
+                }
+            });
+
+            quantityInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    saveData();
+                }
+            });
+
+            itemList.addEventListener('change', (e) => {
+                if (e.target.type === 'number') {
+                    const index = e.target.dataset.index;
+                    const newQuantity = parseInt(e.target.value, 10);
+                    if (!isNaN(newQuantity) && newQuantity > 0) {
+                        updateQuantity(index, newQuantity);
+                    } else {
+                        // Reset to old value if input is invalid
+                        e.target.value = getItemsFromStorage()[index].quantity;
+                    }
+                }
+            });
+
+            itemList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-btn')) {
+                    const index = e.target.dataset.index;
+                    deleteItem(index);
+                }
+            });
+
+            // Initial render
+            renderItemList();
+        });
+    </script>
+</body>
+</html>
