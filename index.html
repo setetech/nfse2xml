@@ -156,9 +156,26 @@
             extrairNumeroNota(texto) {
                 const textoNormalizado = texto.replace(/\s+/g, ' ').trim();
                 
+                // Padrão específico para NFS-e de Osasco: número de 10 dígitos seguido de data e série
+                // Ex: "0000000215 16/12/2025 E 12/2025"
+                let match = textoNormalizado.match(/(\d{10})\s+\d{2}\/\d{2}\/\d{4}\s+[A-Z]\s+\d{2}\/\d{4}/i);
+                if (match && match[1]) {
+                    let numeroEncontrado = match[1].trim();
+                    numeroEncontrado = numeroEncontrado.replace(/^0+/, '') || numeroEncontrado.slice(-1);
+                    return numeroEncontrado;
+                }
+                
+                // Padrão alternativo Osasco: número após "Para verificar a autenticidade"
+                match = textoNormalizado.match(/Para\s+verificar\s+a\s+autenticidade[^\d]+(\d{10})\s+\d{2}\/\d{2}\/\d{4}/i);
+                if (match && match[1]) {
+                    let numeroEncontrado = match[1].trim();
+                    numeroEncontrado = numeroEncontrado.replace(/^0+/, '') || numeroEncontrado.slice(-1);
+                    return numeroEncontrado;
+                }
+                
                 // Padrão específico para NFS-e de Campinas: "Número da NFS-e" seguido do número
                 // Ex: "Número da NFS-e Competência da NFS-e Data e Hora da emissão da NFS-e 29 16/12/2025"
-                let match = textoNormalizado.match(/Número\s+da\s+NFS-e\s+Competência\s+da\s+NFS-e\s+Data\s+e\s+Hora\s+da\s+emissão\s+da\s+NFS-e[^\d]*(\d+)\s+\d{2}\/\d{2}\/\d{4}/i);
+                match = textoNormalizado.match(/Número\s+da\s+NFS-e\s+Competência\s+da\s+NFS-e\s+Data\s+e\s+Hora\s+da\s+emissão\s+da\s+NFS-e[^\d]*(\d+)\s+\d{2}\/\d{2}\/\d{4}/i);
                 if (match && match[1]) {
                     let numeroEncontrado = match[1].trim();
                     numeroEncontrado = numeroEncontrado.replace(/^0+/, '') || numeroEncontrado.slice(-1);
