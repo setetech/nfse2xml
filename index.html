@@ -156,9 +156,26 @@
             extrairNumeroNota(texto) {
                 const textoNormalizado = texto.replace(/\s+/g, ' ').trim();
                 
+                // Padrão específico para NFS-e de Jandira: "Número Nota Fiscal:" seguido do número
+                // Ex: "Número RPS: Número Nota Fiscal: 133"
+                let match = textoNormalizado.match(/Número\s+Nota\s+Fiscal:\s*(\d+)/i);
+                if (match && match[1]) {
+                    let numeroEncontrado = match[1].trim();
+                    numeroEncontrado = numeroEncontrado.replace(/^0+/, '') || numeroEncontrado.slice(-1);
+                    return numeroEncontrado;
+                }
+                
+                // Padrão alternativo Jandira: "Número RPS: Número Nota Fiscal:" seguido do número
+                match = textoNormalizado.match(/Número\s+RPS:\s+Número\s+Nota\s+Fiscal:\s*(\d+)/i);
+                if (match && match[1]) {
+                    let numeroEncontrado = match[1].trim();
+                    numeroEncontrado = numeroEncontrado.replace(/^0+/, '') || numeroEncontrado.slice(-1);
+                    return numeroEncontrado;
+                }
+                
                 // Padrão específico para NFS-e de Arujá: "Número Nota" seguido do número
                 // Ex: "Número RPS: Número Nota 256"
-                let match = textoNormalizado.match(/Número\s+Nota\s+(\d+)/i);
+                match = textoNormalizado.match(/Número\s+Nota\s+(\d+)/i);
                 if (match && match[1]) {
                     let numeroEncontrado = match[1].trim();
                     numeroEncontrado = numeroEncontrado.replace(/^0+/, '') || numeroEncontrado.slice(-1);
