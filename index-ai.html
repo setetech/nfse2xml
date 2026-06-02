@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sete Tech | Gerador de XML com IA - NFS-e</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="config.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .card-shadow {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-shadow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .file-drop-zone {
+            border: 2px dashed #cbd5e1;
+            transition: all 0.3s ease;
+        }
+        .file-drop-zone:hover {
+            border-color: #818cf8;
+            background-color: #f5f7ff;
+        }
+        .file-drop-zone.dragover {
+            background-color: #eef2ff;
+            border-color: #4f46e5;
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(79, 70, 229, 0.2);
+        }
+        #progress-bar-inner {
+            transition: width 0.4s ease-out;
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .processing {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .provider-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .provider-badge.active {
+            background-color: #dcfce7;
+            color: #166534;
+            box-shadow: 0 0 10px rgba(22, 101, 52, 0.2);
+        }
+        .provider-badge.inactive {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .success-pulse {
+            animation: successPulse 0.6s ease-out;
+        }
+        @keyframes successPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        button:not(:disabled):active {
+            transform: scale(0.98);
+        }
+        pre {
+            transition: all 0.3s ease;
+        }
+        pre:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .tooltip {
+            position: relative;
+            cursor: help;
+        }
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.5rem;
+            background: #1f2937;
+            color: white;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            border-radius: 0.375rem;
+            margin-bottom: 0.5rem;
+            z-index: 1000;
+        }
+        /* Notificações */
+        .notification {
+            transition: all 0.3s ease;
+        }
+        /* Melhorias de acessibilidade */
+        button:focus-visible {
+            outline: 2px solid #4f46e5;
+            outline-offset: 2px;
+        }
+        input:focus-visible, select:focus-visible {
+            outline: 2px solid #4f46e5;
+            outline-offset: 0;
+        }
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .notification {
+                right: 1rem;
+                left: 1rem;
+                max-width: calc(100% - 2rem);
+            }
+            .card-shadow:hover {
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100">
+
+    <header class="bg-slate-800 text-white shadow-md">
+        <div class="max-w-7xl mx-auto p-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <svg class="w-8 h-8 text-indigo-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    <path d="M2 7L12 12L22 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    <path d="M12 22V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+                <h1 class="text-xl font-bold">Sete Tech <span class="text-indigo-400">AI</span></h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                </svg>
+                <span class="text-sm font-medium">Powered by AI</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="p-4 md:p-8">
+            <!-- Configuração de IA -->
+            <div class="w-full max-w-7xl mx-auto mb-6">
+                <div class="bg-white rounded-xl card-shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            Configuração do Provedor de IA
+                        </h3>
+                        <button id="toggle-config-btn" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                            Expandir ▼
+                        </button>
+                    </div>
+
+                    <div id="config-panel" class="hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="ai-provider" class="block text-sm font-medium text-gray-700 mb-2">Provedor:</label>
+                                <select id="ai-provider" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <!-- Opções serão preenchidas via JavaScript -->
+                                </select>
+                            </div>
+                            <div>
+                                <label for="ai-model" class="block text-sm font-medium text-gray-700 mb-2">Modelo:</label>
+                                <input type="text" id="ai-model" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Nome do modelo">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="ai-api-url" class="block text-sm font-medium text-gray-700 mb-2">URL da API:</label>
+                                <input type="text" id="ai-api-url" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="http://localhost:1234/v1/chat/completions">
+                            </div>
+                            <div>
+                                <label for="ai-api-key" class="block text-sm font-medium text-gray-700 mb-2">API Key:</label>
+                                <input type="password" id="ai-api-key" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Sua chave API (se necessário)">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <div class="text-sm text-gray-600">
+                                <p>Status: <span id="provider-status" class="provider-badge inactive">Não configurado</span></p>
+                            </div>
+                            <button id="test-connection-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                Testar Conexão
+                            </button>
+                        </div>
+                        
+                        <!-- Instruções LM Studio -->
+                        <div id="lmstudio-instructions" class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+                            <h4 class="font-semibold text-blue-800 mb-2">📝 Instruções para LM Studio:</h4>
+                            <ol class="text-blue-700 space-y-1 list-decimal list-inside">
+                                <li>Abra o LM Studio</li>
+                                <li>Vá para aba <strong>"Local Server"</strong></li>
+                                <li><strong>Selecione um modelo</strong> no dropdown (ex: llava-v1.6-mistral-7b)</li>
+                                <li>Aguarde o modelo carregar (veja log "Model loaded")</li>
+                                <li>Clique em <strong>"Start Server"</strong> se não estiver rodando</li>
+                                <li>Volte aqui e clique em "Testar Conexão"</li>
+                            </ol>
+                            <p class="mt-2 text-blue-600 font-medium">⚠️ IMPORTANTE: O modelo deve estar CARREGADO, não apenas o servidor rodando!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Área Principal -->
+            <div class="w-full max-w-7xl mx-auto bg-white rounded-xl card-shadow overflow-hidden">
+                <div class="p-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Extrator de Dados com IA - Gerador de XML NFS-e</h2>
+                    <p class="text-gray-600 mb-8">Carregue um arquivo PDF para extrair as informações usando IA e gerar o XML correspondente.</p>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- Coluna de Entrada -->
+                        <div class="space-y-6">
+                            <!-- Área de Upload -->
+                            <div class="fade-in">
+                                <label for="pdf-input" class="block text-sm font-semibold text-gray-700 mb-2">
+                                    <span class="inline-flex items-center gap-2">
+                                        <span class="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold">1</span>
+                                        Carregue o arquivo PDF:
+                                    </span>
+                                </label>
+                                <label for="pdf-input" class="file-drop-zone w-full p-6 rounded-lg text-center cursor-pointer hover:bg-slate-50 block">
+                                    <div class="text-gray-500">
+                                        <svg class="mx-auto h-12 w-12 text-slate-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                        </svg>
+                                        <p class="mt-2 text-sm">
+                                            <span class="font-semibold text-indigo-600">Clique para carregar</span> 
+                                            <span class="text-gray-500">ou arraste e solte</span>
+                                        </p>
+                                        <p class="text-xs text-gray-500 mt-1" id="file-name">Apenas arquivos PDF</p>
+                                    </div>
+                                    <input id="pdf-input" name="pdf-input" type="file" class="sr-only" accept="application/pdf">
+                                </label>
+                            </div>
+
+                            <!-- Área de Progresso -->
+                            <div id="progress-container" class="hidden">
+                                <p id="progress-status" class="text-sm font-medium text-gray-700 mb-1">Processando...</p>
+                                <div class="w-full bg-slate-200 rounded-full h-2.5">
+                                    <div id="progress-bar-inner" class="bg-indigo-600 h-2.5 rounded-full" style="width: 0%"></div>
+                                </div>
+                                <p id="progress-detail" class="text-xs text-gray-500 mt-1"></p>
+                            </div>
+
+                            <!-- Preview do PDF -->
+                            <div class="fade-in">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    <span class="inline-flex items-center gap-2">
+                                        <span class="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold">2</span>
+                                        Preview do PDF:
+                                    </span>
+                                </label>
+                                <div class="w-full h-96 bg-slate-50 rounded-lg overflow-auto border border-slate-200">
+                                    <canvas id="pdf-preview" class="mx-auto"></canvas>
+                                    <p id="preview-placeholder" class="text-center text-gray-400 py-20">Preview aparecerá aqui...</p>
+                                </div>
+                            </div>
+
+                            <!-- Dados Extraídos -->
+                            <div class="fade-in">
+                                <label for="json-output" class="block text-sm font-semibold text-gray-700 mb-2">
+                                    <span class="inline-flex items-center gap-2">
+                                        <span class="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold">3</span>
+                                        Dados Extraídos pela IA:
+                                        <span class="tooltip text-gray-400" data-tooltip="Dados brutos extraídos do PDF pela IA">ℹ️</span>
+                                    </span>
+                                </label>
+                                <pre class="w-full h-64 bg-slate-50 text-slate-800 p-4 rounded-lg overflow-auto border border-slate-200 text-xs"><code id="json-output">Aguardando processamento...</code></pre>
+                            </div>
+                        </div>
+
+                        <!-- Coluna de Saída -->
+                        <div class="space-y-6">
+                            <div class="fade-in">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label for="xml-output" class="block text-sm font-semibold text-gray-700">
+                                        <span class="inline-flex items-center gap-2">
+                                            <span class="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold">4</span>
+                                            XML Gerado:
+                                            <span class="tooltip text-gray-400" data-tooltip="XML no padrão ABRASF para NFS-e">ℹ️</span>
+                                        </span>
+                                    </label>
+                                    <button id="download-xml-btn" disabled class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-slate-400 disabled:cursor-not-allowed">
+                                        Baixar XML
+                                    </button>
+                                </div>
+                                <pre class="w-full h-full min-h-[600px] bg-slate-900 text-slate-200 p-4 rounded-lg overflow-auto border border-slate-700 text-sm"><code id="xml-output">O resultado aparecerá aqui...</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    </main>
+    
+    <footer class="text-center py-6 text-slate-500 text-sm">
+        <p>&copy; <span id="footer-year"></span> Sete Tech. Todos os direitos reservados. | Versão AI-powered</p>
+    </footer>
+
+    <script>
+    window.addEventListener('load', () => {
+
+        // Elementos da UI
+        const pdfInput = document.getElementById('pdf-input');
+        const fileNameEl = document.getElementById('file-name');
+        const progressContainer = document.getElementById('progress-container');
+        const progressStatusBar = document.getElementById('progress-status');
+        const progressBarInner = document.getElementById('progress-bar-inner');
+        const progressDetail = document.getElementById('progress-detail');
+        const pdfPreview = document.getElementById('pdf-preview');
+        const previewPlaceholder = document.getElementById('preview-placeholder');
+        const jsonOutput = document.getElementById('json-output');
+        const xmlOutput = document.getElementById('xml-output');
+        const dropZone = pdfInput.closest('label');
+        const downloadBtn = document.getElementById('download-xml-btn');
+        const toggleConfigBtn = document.getElementById('toggle-config-btn');
+        const configPanel = document.getElementById('config-panel');
+        const aiProviderSelect = document.getElementById('ai-provider');
+        const aiModelInput = document.getElementById('ai-model');
+        const aiApiUrlInput = document.getElementById('ai-api-url');
+        const aiApiKeyInput = document.getElementById('ai-api-key');
+        const providerStatus = document.getElementById('provider-status');
+        const testConnectionBtn = document.getElementById('test-connection-btn');
+
+        document.getElementById('footer-year').textContent = new Date().getFullYear();
+
+        let rawXmlContent = '';
+        let xmlFileName = 'documento.xml';
+        let currentPdfDataUrl = null;
+
+        // Sistema de notificações
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = 'notification fixed top-4 right-4 max-w-md p-4 rounded-lg shadow-lg z-50 fade-in';
+            
+            const colors = {
+                success: 'bg-green-50 border-green-500 text-green-800',
+                error: 'bg-red-50 border-red-500 text-red-800',
+                info: 'bg-blue-50 border-blue-500 text-blue-800',
+                warning: 'bg-yellow-50 border-yellow-500 text-yellow-800'
+            };
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                info: 'ℹ️',
+                warning: '⚠️'
+            };
+            
+            notification.className += ` ${colors[type]} border-l-4`;
+            notification.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="text-xl">${icons[type]}</div>
+                    <div class="flex-1 text-sm whitespace-pre-line">${message}</div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-gray-400 hover:text-gray-600 font-bold text-lg leading-none">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto remover após 5 segundos
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        }
+
+        // Verificação da biblioteca PDF.js
+        if (typeof pdfjsLib === 'undefined') {
+            console.error('PDF.js library failed to load.');
+            jsonOutput.textContent = 'Erro crítico: A biblioteca de PDF não pôde ser carregada.';
+            xmlOutput.textContent = 'Geração de XML desativada.';
+            return;
+        }
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // Inicializar provedores de IA
+        function initializeProviders() {
+            aiProviderSelect.innerHTML = '';
+            Object.keys(AI_PROVIDERS).forEach(key => {
+                const provider = AI_PROVIDERS[key];
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = `${provider.name}${provider.enabled ? ' ✓' : ' (Desabilitado)'}`;
+                aiProviderSelect.appendChild(option);
+            });
+
+            // Selecionar provedor padrão
+            aiProviderSelect.value = DEFAULT_PROVIDER;
+            updateProviderConfig();
+        }
+
+        // Atualizar configuração do provedor
+        function updateProviderConfig() {
+            const selectedKey = aiProviderSelect.value;
+            const provider = AI_PROVIDERS[selectedKey];
+            const lmInstructions = document.getElementById('lmstudio-instructions');
+            
+            if (provider) {
+                aiModelInput.value = provider.model;
+                aiApiUrlInput.value = provider.apiUrl;
+                aiApiKeyInput.value = provider.apiKey;
+                
+                if (provider.enabled) {
+                    providerStatus.textContent = 'Configurado';
+                    providerStatus.className = 'provider-badge active';
+                } else {
+                    providerStatus.textContent = 'Desabilitado';
+                    providerStatus.className = 'provider-badge inactive';
+                }
+
+                // Mostrar/ocultar instruções do LM Studio
+                if (lmInstructions) {
+                    lmInstructions.style.display = selectedKey === 'lmstudio' ? 'block' : 'none';
+                }
+            }
+        }
+
+        // Toggle painel de configuração
+        toggleConfigBtn.addEventListener('click', () => {
+            configPanel.classList.toggle('hidden');
+            toggleConfigBtn.textContent = configPanel.classList.contains('hidden') ? 'Expandir ▼' : 'Recolher ▲';
+        });
+
+        // Mudança de provedor
+        aiProviderSelect.addEventListener('change', () => {
+            updateProviderConfig();
+        });
+
+        // Testar conexão
+        testConnectionBtn.addEventListener('click', async () => {
+            const apiUrl = aiApiUrlInput.value;
+            const apiKey = aiApiKeyInput.value;
+
+            testConnectionBtn.disabled = true;
+            testConnectionBtn.textContent = 'Testando...';
+            testConnectionBtn.classList.add('processing');
+            
+            providerStatus.textContent = 'Testando...';
+            providerStatus.className = 'provider-badge';
+            providerStatus.style.backgroundColor = '#fef3c7';
+            providerStatus.style.color = '#92400e';
+
+            try {
+                // Teste simples de conexão
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': apiKey ? `Bearer ${apiKey}` : ''
+                    },
+                    body: JSON.stringify({
+                        messages: [{ role: 'user', content: 'test' }],
+                        max_tokens: 1
+                    })
+                });
+
+                if (response.ok || response.status === 400) {
+                    // 400 é OK porque significa que o servidor respondeu
+                    providerStatus.textContent = 'Conectado ✓';
+                    providerStatus.className = 'provider-badge active';
+                    providerStatus.classList.add('success-pulse');
+                    
+                    // Mostrar notificação de sucesso
+                    showNotification('✅ Conexão bem-sucedida com o provedor de IA!', 'success');
+                } else {
+                    throw new Error(`Status: ${response.status}`);
+                }
+            } catch (error) {
+                providerStatus.textContent = 'Erro de conexão';
+                providerStatus.className = 'provider-badge inactive';
+                showNotification(`❌ Erro ao testar conexão: ${error.message}\n\nVerifique se o servidor está rodando e a URL está correta.`, 'error');
+            } finally {
+                testConnectionBtn.disabled = false;
+                testConnectionBtn.textContent = 'Testar Conexão';
+                testConnectionBtn.classList.remove('processing');
+            }
+        });
+
+        // Processar PDF
+        async function processPdfWithAI(file) {
+            updateProgress(10, 'Carregando PDF...', 'Lendo arquivo...');
+
+            try {
+                // Converter PDF para imagem
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                
+                updateProgress(30, 'Renderizando PDF...', 'Preparando primeira página...');
+                
+                const page = await pdf.getPage(1);
+                const viewport = page.getViewport({ scale: 2.0 });
+                
+                const canvas = pdfPreview;
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+
+                previewPlaceholder.style.display = 'none';
+                canvas.style.display = 'block';
+
+                // Converter canvas para base64
+                currentPdfDataUrl = canvas.toDataURL('image/png');
+                
+                updateProgress(50, 'Enviando para IA...', 'Processando com modelo de linguagem...');
+
+                // Chamar API de IA
+                const extractedData = await callAIProvider(currentPdfDataUrl);
+                
+                updateProgress(80, 'Gerando XML...', 'Criando estrutura XML...');
+
+                // Exibir dados extraídos com animação
+                jsonOutput.classList.add('success-pulse');
+                jsonOutput.textContent = JSON.stringify(extractedData, null, 2);
+                jsonOutput.style.color = '';
+                jsonOutput.style.fontWeight = '';
+                setTimeout(() => jsonOutput.classList.remove('success-pulse'), 600);
+
+                const xmlContent = generateXML(extractedData);
+                xmlOutput.classList.add('success-pulse');
+                xmlOutput.textContent = xmlContent;
+                rawXmlContent = xmlContent;
+                setTimeout(() => xmlOutput.classList.remove('success-pulse'), 600);
+
+                // Habilitar download com animação
+                downloadBtn.disabled = false;
+                downloadBtn.classList.add('success-pulse');
+                setTimeout(() => downloadBtn.classList.remove('success-pulse'), 600);
+                xmlFileName = `nfse_${extractedData.numeroNota || 'documento'}.xml`;
+
+                updateProgress(100, 'Concluído!', 'Processamento finalizado com sucesso.');
+                
+                // Notificação de sucesso
+                showNotification('✅ PDF processado com sucesso! XML gerado e pronto para download.', 'success');
+                
+                setTimeout(() => {
+                    progressContainer.classList.add('hidden');
+                }, 2000);
+
+            } catch (error) {
+                console.error('Erro ao processar PDF:', error);
+                
+                // Formatar mensagem de erro para melhor legibilidade
+                const errorMsg = error.message.replace(/\\n/g, '\n');
+                jsonOutput.textContent = `❌ ERRO:\n\n${errorMsg}`;
+                jsonOutput.style.color = '#dc2626';
+                jsonOutput.style.fontWeight = 'bold';
+                
+                xmlOutput.textContent = 'Erro ao gerar XML.';
+                
+                // Mostrar alerta se for erro crítico
+                if (error.message.includes('MODELO NÃO CARREGADO')) {
+                    alert(errorMsg);
+                }
+                
+                updateProgress(0, 'Erro no processamento', error.message.split('\n')[0]);
+            }
+        }
+
+        // Chamar provedor de IA
+        async function callAIProvider(imageDataUrl) {
+            const selectedKey = aiProviderSelect.value;
+            const provider = AI_PROVIDERS[selectedKey];
+            const apiUrl = aiApiUrlInput.value;
+            const apiKey = aiApiKeyInput.value;
+            const model = aiModelInput.value;
+
+            // Validar se está configurado
+            if (!apiUrl) {
+                throw new Error('URL da API não configurada. Configure nas opções acima.');
+            }
+
+            // Preparar mensagem para a IA
+            let requestBody;
+
+            if (selectedKey === 'gemini') {
+                // Formato Gemini
+                requestBody = {
+                    contents: [{
+                        parts: [
+                            { text: SYSTEM_PROMPT },
+                            {
+                                inline_data: {
+                                    mime_type: "image/png",
+                                    data: imageDataUrl.split(',')[1]
+                                }
+                            }
+                        ]
+                    }]
+                };
+            } else if (selectedKey === 'claude') {
+                // Formato Claude
+                requestBody = {
+                    model: model,
+                    max_tokens: 4096,
+                    messages: [{
+                        role: "user",
+                        content: [
+                            {
+                                type: "image",
+                                source: {
+                                    type: "base64",
+                                    media_type: "image/png",
+                                    data: imageDataUrl.split(',')[1]
+                                }
+                            },
+                            {
+                                type: "text",
+                                text: SYSTEM_PROMPT
+                            }
+                        ]
+                    }]
+                };
+            } else if (selectedKey === 'ollama') {
+                // Formato Ollama
+                requestBody = {
+                    model: model,
+                    messages: [{
+                        role: "user",
+                        content: SYSTEM_PROMPT,
+                        images: [imageDataUrl.split(',')[1]]
+                    }],
+                    stream: false
+                };
+            } else {
+                // Formato OpenAI/LM Studio (padrão)
+                requestBody = {
+                    model: model,
+                    messages: [
+                        {
+                            role: "system",
+                            content: SYSTEM_PROMPT
+                        },
+                        {
+                            role: "user",
+                            content: [
+                                {
+                                    type: "image_url",
+                                    image_url: {
+                                        url: imageDataUrl
+                                    }
+                                },
+                                {
+                                    type: "text",
+                                    text: "Por favor, extraia as informações desta NFS-e e retorne em formato JSON conforme especificado."
+                                }
+                            ]
+                        }
+                    ],
+                    max_tokens: 4096,
+                    temperature: 0.1
+                };
+            }
+
+            // Fazer chamada à API
+            const headers = {};
+            if (provider.headers) {
+                Object.keys(provider.headers).forEach(key => {
+                    headers[key] = provider.headers[key].replace('{API_KEY}', apiKey);
+                });
+            }
+
+            const url = selectedKey === 'gemini' ? `${apiUrl}?key=${apiKey}` : apiUrl;
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                let errorMessage = `Erro na API (${response.status})`;
+                
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    
+                    // Detectar erro específico de modelo não carregado (LM Studio)
+                    if (errorJson.error && errorJson.error.message && 
+                        errorJson.error.message.includes('No models loaded')) {
+                        errorMessage = `❌ MODELO NÃO CARREGADO no LM Studio!\n\n` +
+                            `SOLUÇÃO:\n` +
+                            `1. Abra o LM Studio\n` +
+                            `2. Vá para aba "Local Server"\n` +
+                            `3. Selecione um modelo no dropdown (ex: llava-v1.6-mistral-7b)\n` +
+                            `4. O modelo será carregado automaticamente\n` +
+                            `5. Aguarde até ver "Model loaded" no log\n` +
+                            `6. Tente novamente aqui\n\n` +
+                            `Se não tiver nenhum modelo:\n` +
+                            `1. Vá para aba "Discover" (🔍)\n` +
+                            `2. Procure por "llava"\n` +
+                            `3. Baixe um modelo (ex: llava-v1.6-mistral-7b)`;
+                        throw new Error(errorMessage);
+                    }
+                    
+                    // Outros erros de API
+                    if (errorJson.error && errorJson.error.message) {
+                        errorMessage += ': ' + errorJson.error.message;
+                    }
+                } catch (parseError) {
+                    // Se não for JSON, usar texto bruto
+                    if (parseError.message.includes('MODELO NÃO CARREGADO')) {
+                        throw parseError; // Re-lançar erro de modelo não carregado
+                    }
+                    errorMessage += ': ' + errorText.substring(0, 200);
+                }
+                
+                throw new Error(errorMessage);
+            }
+
+            const data = await response.json();
+
+            // Extrair resposta conforme o provedor
+            let aiResponse;
+            if (selectedKey === 'gemini') {
+                aiResponse = data.candidates[0].content.parts[0].text;
+            } else if (selectedKey === 'claude') {
+                aiResponse = data.content[0].text;
+            } else if (selectedKey === 'ollama') {
+                aiResponse = data.message.content;
+            } else {
+                // OpenAI/LM Studio
+                aiResponse = data.choices[0].message.content;
+            }
+
+            // Extrair JSON da resposta
+            const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                throw new Error('Resposta da IA não contém JSON válido');
+            }
+
+            return JSON.parse(jsonMatch[0]);
+        }
+
+        // Gerar XML - SEMPRE com estrutura completa
+        function generateXML(data) {
+            const escaparXML = (str) => {
+                if (!str) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&apos;');
+            };
+
+            const formatarValor = (valor) => {
+                if (valor === null || valor === undefined || valor === '') return '0.00';
+                return typeof valor === 'number' ? valor.toFixed(2) : '0.00';
+            };
+            
+            const obterValor = (obj, path, defaultValue = '') => {
+                const keys = path.split('.');
+                let value = obj;
+                for (const key of keys) {
+                    value = value?.[key];
+                    if (value === undefined || value === null) return defaultValue;
+                }
+                return value || defaultValue;
+            };
+
+            // Garantir que todas as propriedades existam com valores padrão
+            const numeroNota = obterValor(data, 'numeroNota', '');
+            const codigoVerificacao = obterValor(data, 'codigoVerificacao', '');
+            const dataEmissao = obterValor(data, 'dataEmissao', '');
+            
+            const prestadorRazao = obterValor(data, 'prestador.razaoSocial', '');
+            const prestadorCnpj = obterValor(data, 'prestador.cnpj', '').replace(/[^\d]/g, '');
+            const prestadorEndereco = obterValor(data, 'prestador.endereco', '');
+            const prestadorMunicipio = obterValor(data, 'prestador.municipio', '');
+            
+            const tomadorRazao = obterValor(data, 'tomador.razaoSocial', '');
+            const tomadorCpfCnpj = obterValor(data, 'tomador.cpfCnpj', '').replace(/[^\d]/g, '');
+            const tomadorEndereco = obterValor(data, 'tomador.endereco', '');
+            const tomadorMunicipio = obterValor(data, 'tomador.municipio', '');
+            
+            const valorServicos = obterValor(data, 'valores.valorServicos', 0);
+            const deducoes = obterValor(data, 'valores.deducoes', 0);
+            const baseCalculo = obterValor(data, 'valores.baseCalculo', 0);
+            const aliquota = obterValor(data, 'valores.aliquota', 0);
+            const valorISS = obterValor(data, 'valores.valorISS', 0);
+            const valorLiquido = obterValor(data, 'valores.valorLiquido', 0);
+            
+            const discriminacao = obterValor(data, 'discriminacao', '');
+
+            // Gerar XML com TODAS as tags, sempre
+            return `<?xml version="1.0" encoding="UTF-8"?>
+<NFSe xmlns="http://www.abrasf.org.br/nfse.xsd">
+    <InfNfse>
+        <Numero>${escaparXML(numeroNota)}</Numero>
+        <CodigoVerificacao>${escaparXML(codigoVerificacao)}</CodigoVerificacao>
+        <DataEmissao>${escaparXML(dataEmissao)}</DataEmissao>
+        <Competencia>${escaparXML(dataEmissao)}</Competencia>
+        
+        <PrestadorServico>
+            <RazaoSocial>${escaparXML(prestadorRazao)}</RazaoSocial>
+            <Cnpj>${escaparXML(prestadorCnpj)}</Cnpj>
+            <Endereco>
+                <Logradouro>${escaparXML(prestadorEndereco)}</Logradouro>
+                <Municipio>${escaparXML(prestadorMunicipio)}</Municipio>
+            </Endereco>
+        </PrestadorServico>
+        
+        <TomadorServico>
+            <RazaoSocial>${escaparXML(tomadorRazao)}</RazaoSocial>
+            <CpfCnpj>${escaparXML(tomadorCpfCnpj)}</CpfCnpj>
+            <Endereco>
+                <Logradouro>${escaparXML(tomadorEndereco)}</Logradouro>
+                <Municipio>${escaparXML(tomadorMunicipio)}</Municipio>
+            </Endereco>
+        </TomadorServico>
+        
+        <Servico>
+            <Valores>
+                <ValorServicos>${formatarValor(valorServicos)}</ValorServicos>
+                <ValorDeducoes>${formatarValor(deducoes)}</ValorDeducoes>
+                <BaseCalculo>${formatarValor(baseCalculo)}</BaseCalculo>
+                <Aliquota>${formatarValor(aliquota)}</Aliquota>
+                <ValorIss>${formatarValor(valorISS)}</ValorIss>
+                <ValorLiquidoNfse>${formatarValor(valorLiquido)}</ValorLiquidoNfse>
+            </Valores>
+            <Discriminacao>${escaparXML(discriminacao)}</Discriminacao>
+        </Servico>
+    </InfNfse>
+</NFSe>`;
+        }
+
+        // Atualizar progresso com animação
+        function updateProgress(percent, status, detail) {
+            progressContainer.classList.remove('hidden');
+            progressContainer.classList.add('fade-in');
+            progressBarInner.style.width = `${percent}%`;
+            progressStatusBar.textContent = status;
+            
+            // Adicionar classe de processamento
+            if (percent > 0 && percent < 100) {
+                progressStatusBar.classList.add('processing');
+            } else {
+                progressStatusBar.classList.remove('processing');
+            }
+            
+            if (detail) {
+                progressDetail.textContent = detail;
+            }
+            
+            // Efeito visual quando completo
+            if (percent === 100) {
+                progressBarInner.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+                setTimeout(() => {
+                    progressBarInner.style.background = 'linear-gradient(90deg, #4f46e5, #7c3aed)';
+                }, 1000);
+            }
+        }
+
+        // Eventos de arquivo
+        pdfInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                fileNameEl.textContent = `📄 ${file.name}`;
+                fileNameEl.classList.add('text-indigo-600', 'font-medium');
+                showNotification(`📂 Arquivo carregado: ${file.name}`, 'info');
+                processPdfWithAI(file);
+            } else if (file) {
+                showNotification('❌ Por favor, selecione apenas arquivos PDF.', 'error');
+            }
+        });
+
+        // Drag and drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === 'application/pdf') {
+                pdfInput.files = e.dataTransfer.files;
+                fileNameEl.textContent = `📄 ${file.name}`;
+                fileNameEl.classList.add('text-indigo-600', 'font-medium');
+                showNotification(`📂 Arquivo carregado: ${file.name}`, 'info');
+                processPdfWithAI(file);
+            } else if (file) {
+                showNotification('❌ Por favor, selecione apenas arquivos PDF.', 'error');
+            }
+        });
+        
+        // Mostrar instruções do LM Studio se for o provedor selecionado
+        const lmInstructions = document.getElementById('lmstudio-instructions');
+        if (lmInstructions && aiProviderSelect.value === 'lmstudio') {
+            lmInstructions.style.display = 'block';
+        }
+
+        // Download XML
+        downloadBtn.addEventListener('click', () => {
+            const blob = new Blob([rawXmlContent], { type: 'application/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // Notificação de download
+            showNotification(`📥 XML baixado: ${xmlFileName}`, 'success');
+            a.download = xmlFileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // Inicializar
+        initializeProviders();
+    });
+    </script>
+</body>
+</html>
