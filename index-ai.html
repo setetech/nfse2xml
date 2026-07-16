@@ -801,12 +801,32 @@
             const tomadorEndereco = obterValor(data, 'tomador.endereco', '');
             const tomadorMunicipio = obterValor(data, 'tomador.municipio', '');
             
-            const valorServicos = obterValor(data, 'valores.valorServicos', 0);
-            const deducoes = obterValor(data, 'valores.deducoes', 0);
-            const baseCalculo = obterValor(data, 'valores.baseCalculo', 0);
-            const aliquota = obterValor(data, 'valores.aliquota', 0);
-            const valorISS = obterValor(data, 'valores.valorISS', 0);
-            const valorLiquido = obterValor(data, 'valores.valorLiquido', 0);
+            // Normaliza para número (aceita "1.394,96", "1394.96" ou number)
+            const paraNumero = (valor) => {
+                if (typeof valor === 'number') return isNaN(valor) ? 0 : valor;
+                if (valor === null || valor === undefined || valor === '') return 0;
+                let s = String(valor).trim().replace(/[^\d.,-]/g, '');
+                // Se tem vírgula, assume formato BR (ponto = milhar, vírgula = decimal)
+                if (s.includes(',')) {
+                    s = s.replace(/\./g, '').replace(',', '.');
+                }
+                const n = parseFloat(s);
+                return isNaN(n) ? 0 : n;
+            };
+
+            const valorServicos = paraNumero(obterValor(data, 'valores.valorServicos', 0));
+            const deducoes = paraNumero(obterValor(data, 'valores.deducoes', 0));
+            const baseCalculo = paraNumero(obterValor(data, 'valores.baseCalculo', 0));
+            const aliquota = paraNumero(obterValor(data, 'valores.aliquota', 0));
+            const valorISS = paraNumero(obterValor(data, 'valores.valorISS', 0));
+            let valorLiquido = paraNumero(obterValor(data, 'valores.valorLiquido', 0));
+
+            // Quando o valor líquido não vier informado (0), calcula com base no
+            // valor dos serviços, descontando deduções e ISS retido (quando houver).
+            if (!valorLiquido || valorLiquido <= 0) {
+                const liquidoCalculado = valorServicos - deducoes - valorISS;
+                valorLiquido = liquidoCalculado > 0 ? liquidoCalculado : valorServicos;
+            }
             
             const discriminacao = obterValor(data, 'discriminacao', '');
 
